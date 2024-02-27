@@ -7,6 +7,9 @@ export default class Redis {
 
   constructor() {}
 
+  /**
+   * @TODO: has to be a better way of determining which response matches which request.
+   */
   private async command(command: string) {
     return new Promise<string[]>((resolve, reject) => {
       const id = this.acc++;

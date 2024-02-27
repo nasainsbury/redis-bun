@@ -32,7 +32,7 @@ describe("Setting strings", () => {
   });
 });
 
-describe("Setting arrys", () => {
+describe("Setting arrays", () => {
   const redis = new Redis();
 
   it("Successfully creates an array of strings", async () => {
@@ -69,3 +69,5 @@ describe("Setting arrys", () => {
     expect(res).toEqual(["Nathan", 27, 183.5]);
   });
 });
+
+describe("Setting objects", () => {});
