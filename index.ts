@@ -15,6 +15,7 @@ export default class Redis {
       const id = this.acc++;
       this.client.write(`echo ${id}\r\n${command}`, (err) => {
         if (err) {
+          console.error("COOL", err);
           reject(err);
         }
       });
@@ -28,75 +29,26 @@ export default class Redis {
     });
   }
 
-  public async type(key: string) {
+  private format(value: string) {
     try {
-      const res = await this.command(`TYPE ${key}\r\n`);
-      return res[0];
+      return JSON.parse(value)
     } catch {
-      return null;
+      return value;
     }
   }
+
   public async get(key: string) {
-    const type = await this.type(key);
-    switch (type) {
-      case "+string":
-        return this.getString(key);
-      case "+list":
-        return this.getList(key);
-      case "+hash":
-        return this.getHash(key);
-    }
-    return null;
+    const res = await this.command(`GET ${key}\r\n`);
+    return this.format(res[1])
   }
   public async set(
     key: string,
-    value: string | number | Array<string | number>
+    value: string | number | Array<string | number> | Record<string, unknown>
   ) {
-    if (typeof value === "string" || typeof value === "number") {
-      return await this.setString(key, value);
+    if (typeof value === "object") {
+      await this.command(`SET ${key} "${JSON.stringify(value).replace(/"/g, '\\"')}"\r\n`);
+    } else {
+      await this.command(`SET ${key} ${value}\r\n`);
     }
-    if (Array.isArray(value)) {
-      return await this.setList(key, value);
-    }
-  }
-
-  private async setString(key: string, value: string | number) {
-    const res = await this.command(`SET ${key} ${value}\r\n`);
-
-    return res[0] === "+OK";
-  }
-  private async setList(key: string, value: Array<number | string>) {
-    const res = await this.command(
-      `DEL ${key}\r\nRPUSH ${key} ${value.join(" ")}\r\n`
-    );
-    const amountAdded = Number(res[1][1]);
-    return value.length === amountAdded;
-  }
-  private async getString(key: string) {
-    const res = await this.command(`GET ${key}\r\n`);
-    return Number(res[1]) || res[1];
-  }
-  private async getList(key: string) {
-    const res = await this.command(`LRANGE ${key} 0 -1\r\n`);
-    const arr = [];
-    for (let i = 2; i < res.length; i += 2) {
-      arr.push(Number(res[i]) || res[i]);
-    }
-
-    return arr;
-  }
-  private async getHash(key: string) {
-    const res = await this.command(`HGETALL ${key}\r\n`);
-    const obj = {};
-    for (let i = 2; i < res.length - 2; i += 4) {
-      const key = res[i];
-      const value = Number(res[i + 2]) || res[i + 2];
-      _.set(obj, key, value);
-    }
-    return obj;
   }
 }
-
-const redis = new Redis();
-
-const obj = await redis.get("car3");
