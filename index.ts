@@ -1,5 +1,11 @@
 import * as net from "net";
 import _ from "lodash";
+import ms from "ms";
+
+type SetOpts = {
+  expireAbs?: number;
+  expire?: number | string;
+};
 
 export default class Redis {
   private client = net.createConnection(6379, "127.0.0.1");
@@ -28,27 +34,55 @@ export default class Redis {
       });
     });
   }
-
   private format(value: string) {
     try {
-      return JSON.parse(value)
+      return JSON.parse(value);
     } catch {
       return value;
     }
   }
+  private calculateExpiration(opts?: SetOpts) {
+    if (!opts) {
+      return "";
+    }
 
+    if (opts.expireAbs) {
+      return `EXAT ${opts.expireAbs}`;
+    }
+
+    if (opts.expire) {
+      if (typeof opts.expire === "number") {
+        return `PX ${opts.expire}`;
+      } else {
+        return `PX ${ms(opts.expire)}`;
+      }
+    }
+
+    return "";
+  }
+
+  public async close() {
+    return this.client.destroy();
+  }
   public async get(key: string) {
     const res = await this.command(`GET ${key}\r\n`);
-    return this.format(res[1])
+    return this.format(res[1]);
   }
   public async set(
     key: string,
-    value: string | number | Array<string | number> | Record<string, unknown>
+    value: string | number | Array<string | number> | Record<string, unknown>,
+    opts?: SetOpts
   ) {
+    let expire = this.calculateExpiration(opts);
     if (typeof value === "object") {
-      await this.command(`SET ${key} "${JSON.stringify(value).replace(/"/g, '\\"')}"\r\n`);
+      await this.command(
+        `SET ${key} "${JSON.stringify(value).replace(
+          /"/g,
+          '\\"'
+        )} ${expire}"\r\n`
+      );
     } else {
-      await this.command(`SET ${key} ${value}\r\n`);
+      await this.command(`SET ${key} ${value} ${expire}\r\n`);
     }
   }
 }
