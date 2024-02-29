@@ -10,18 +10,11 @@ This is just a fun project to learn more about:
 
 To install dependencies:
 
-```bash
-bun install
-```
+```ts
+async function main() {
+  const redis = new Redis();
 
-To run:
-
-```bash
-bun run index.ts
-```
-
-To test:
-
-```bash
-bun test
+  await redis.set("name", "Nathan", { expire: "8h" });
+  const name = await redis.get("name");
+}
 ```
