@@ -7,11 +7,18 @@ type SetOpts = {
   expire?: number | string;
 };
 
+type RedisOpts = {
+  port: number;
+  host: string;
+};
+
 export default class Redis {
-  private client = net.createConnection(6379, "127.0.0.1");
+  private client: net.Socket;
   private acc = 0;
 
-  constructor() {}
+  constructor(opts: RedisOpts) {
+    this.client = net.createConnection(opts.port, opts.host);
+  }
 
   /**
    * @TODO: has to be a better way of determining which response matches which request.
@@ -21,7 +28,6 @@ export default class Redis {
       const id = this.acc++;
       this.client.write(`echo ${id}\r\n${command}`, (err) => {
         if (err) {
-          console.error("COOL", err);
           reject(err);
         }
       });

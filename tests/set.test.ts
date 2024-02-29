@@ -2,7 +2,7 @@ import { describe, it, expect, afterAll } from "bun:test";
 import Redis from "../index";
 
 describe("redis.set()", () => {
-  const redis = new Redis();
+  const redis = new Redis({ host: "127.0.0.1", port: 6379 });
 
   afterAll(() => {
     redis.close();
